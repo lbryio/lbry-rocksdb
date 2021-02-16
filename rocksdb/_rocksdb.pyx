@@ -1185,13 +1185,6 @@ cdef class ColumnFamilyOptions(object):
                 else:
                     raise Exception("Unknown compaction style")
 
-    # Deprecate
-    #  property filter_deletes:
-        #  def __get__(self):
-            #  return self.copts.filter_deletes
-        #  def __set__(self, value):
-            #  self.copts.filter_deletes = value
-
     property max_sequential_skip_in_iterations:
         def __get__(self):
             return self.copts.max_sequential_skip_in_iterations
@@ -1272,6 +1265,12 @@ cdef class ColumnFamilyOptions(object):
             return self.copts.paranoid_file_checks
         def __set__(self, value):
             self.copts.paranoid_file_checks = value
+
+    property level_compaction_dynamic_level_bytes:
+        def __get__(self):
+            return self.copts.level_compaction_dynamic_level_bytes
+        def __set__(self, value):
+            self.copts.level_compaction_dynamic_level_bytes = value
 
 cdef class Options(ColumnFamilyOptions):
     cdef options.Options* opts
