@@ -86,6 +86,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         uint64_t max_manifest_file_size
         int table_cache_numshardbits
         uint64_t WAL_ttl_seconds
+        uint64_t ttl
         uint64_t WAL_size_limit_MB
         size_t manifest_preallocation_size
         cpp_bool allow_mmap_reads
