@@ -861,7 +861,6 @@ cdef class ColumnFamilyHandle:
         # a situation where we are invalid, but match a valid handle's hash
         return hash((self.id, self.name, id(self._ref)))
 
-
 cdef class ColumnFamilyOptions(object):
     cdef options.ColumnFamilyOptions* copts
     cdef PyComparator py_comparator
@@ -1412,6 +1411,12 @@ cdef class Options(ColumnFamilyOptions):
         def __set__(self, value):
             self.opts.WAL_ttl_seconds = value
 
+    property db_write_buffer_size:
+        def __get__(self):
+            return self.opts.db_write_buffer_size
+        def __set__(self, value):
+            self.opts.db_write_buffer_size = value
+
     property ttl:
         def __get__(self):
             return self.opts.ttl
@@ -1511,7 +1516,6 @@ cdef class Options(ColumnFamilyOptions):
                 self.py_row_cache = value
                 self.opts.row_cache = self.py_row_cache.get_cache()
 
-
 # Forward declaration
 cdef class Snapshot
 
@@ -1572,7 +1576,6 @@ cdef class WriteBatch(object):
 
     def __iter__(self):
         return WriteBatchIterator(self)
-
 
 @cython.internal
 cdef class WriteBatchIterator(object):
