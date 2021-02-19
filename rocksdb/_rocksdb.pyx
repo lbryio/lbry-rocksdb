@@ -1273,9 +1273,9 @@ cdef class ColumnFamilyOptions(object):
 
     property ttl:
         def __get__(self):
-            return self.opts.ttl
+            return self.copts.ttl
         def __set__(self, value):
-            self.opts.ttl = value
+            self.copts.ttl = value
 
 cdef class Options(ColumnFamilyOptions):
     cdef options.Options* opts
