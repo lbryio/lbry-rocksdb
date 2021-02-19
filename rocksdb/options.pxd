@@ -159,6 +159,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool optimize_filters_for_hits
         cpp_bool paranoid_file_checks
         cpp_bool level_compaction_dynamic_level_bytes
+        uint64_t ttl
 
     cdef cppclass Options(DBOptions, ColumnFamilyOptions):
         pass
