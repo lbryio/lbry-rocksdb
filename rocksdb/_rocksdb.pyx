@@ -1271,6 +1271,12 @@ cdef class ColumnFamilyOptions(object):
         def __set__(self, value):
             self.copts.level_compaction_dynamic_level_bytes = value
 
+    property ttl:
+        def __get__(self):
+            return self.opts.ttl
+        def __set__(self, value):
+            self.opts.ttl = value
+
 cdef class Options(ColumnFamilyOptions):
     cdef options.Options* opts
     cdef PyCache py_row_cache
