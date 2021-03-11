@@ -159,7 +159,8 @@ cdef class PyGenericComparator(PyComparator):
 
     def __dealloc__(self):
         if not self.comparator_ptr == NULL:
-            del self.comparator_ptr
+            with nogil:
+                del self.comparator_ptr
 
     cdef object get_ob(self):
         return self.ob
@@ -771,7 +772,8 @@ cdef class _ColumnFamilyHandle:
 
     def __dealloc__(self):
         if not self.handle == NULL:
-            del self.handle
+            with nogil:
+                del self.handle
 
     @staticmethod
     cdef from_handle_ptr(db.ColumnFamilyHandle* handle):
@@ -879,7 +881,8 @@ cdef class ColumnFamilyOptions(object):
 
     def __dealloc__(self):
         if not self.copts == NULL:
-            del self.copts
+            with nogil:
+                del self.copts
 
     def __init__(self, **kwargs):
         self.py_comparator = BytewiseComparator()
@@ -1290,8 +1293,9 @@ cdef class Options(ColumnFamilyOptions):
 
     def __dealloc__(self):
         if not self.opts == NULL:
-            self.copts = NULL
-            del self.opts
+            with nogil:
+                del self.copts
+                del self.opts
 
     def __init__(self, **kwargs):
         ColumnFamilyOptions.__init__(self)
@@ -1545,7 +1549,8 @@ cdef class WriteBatch(object):
 
     def __dealloc__(self):
         if not self.batch == NULL:
-            del self.batch
+            with nogil:
+                del self.batch
 
     def put(self, key, value):
         cdef db.ColumnFamilyHandle* cf_handle = NULL
@@ -1753,13 +1758,13 @@ cdef class DB(object):
                 db.CancelAllBackgroundWork(self.db, c_safe)
             # We have to make sure we delete the handles so rocksdb doesn't
             # assert when we delete the db
-            del self.cf_handles[:]
+            self.cf_handles.clear()
             for copts in self.cf_options:
                 if copts:
                     copts.in_use = False
-            del self.cf_options[:]
+            self.cf_options.clear()
             with nogil:
-                st = self.db.Close()
+                self.db.Close()
                 self.db = NULL
             if self.opts is not None:
                 self.opts.in_use = False
@@ -2299,7 +2304,8 @@ cdef class BaseIterator(object):
 
     def __dealloc__(self):
         if not self.ptr == NULL:
-            del self.ptr
+            with nogil:
+                del self.ptr
 
     def __iter__(self):
         return self
