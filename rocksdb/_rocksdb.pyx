@@ -159,8 +159,7 @@ cdef class PyGenericComparator(PyComparator):
 
     def __dealloc__(self):
         if not self.comparator_ptr == NULL:
-            with nogil:
-                del self.comparator_ptr
+            del self.comparator_ptr
 
     cdef object get_ob(self):
         return self.ob
@@ -772,8 +771,7 @@ cdef class _ColumnFamilyHandle:
 
     def __dealloc__(self):
         if not self.handle == NULL:
-            with nogil:
-                del self.handle
+            del self.handle
 
     @staticmethod
     cdef from_handle_ptr(db.ColumnFamilyHandle* handle):
@@ -881,8 +879,7 @@ cdef class ColumnFamilyOptions(object):
 
     def __dealloc__(self):
         if not self.copts == NULL:
-            with nogil:
-                del self.copts
+            del self.copts
 
     def __init__(self, **kwargs):
         self.py_comparator = BytewiseComparator()
@@ -1293,9 +1290,8 @@ cdef class Options(ColumnFamilyOptions):
 
     def __dealloc__(self):
         if not self.opts == NULL:
-            with nogil:
-                del self.copts
-                del self.opts
+            self.copts = NULL
+            del self.opts
 
     def __init__(self, **kwargs):
         ColumnFamilyOptions.__init__(self)
@@ -1439,6 +1435,12 @@ cdef class Options(ColumnFamilyOptions):
         def __set__(self, value):
             self.opts.WAL_size_limit_MB = value
 
+    property max_total_wal_size:
+        def __get__(self):
+            return self.opts.max_total_wal_size
+        def __set__(self, value):
+            self.opts.max_total_wal_size = value
+
     property manifest_preallocation_size:
         def __get__(self):
             return self.opts.manifest_preallocation_size
@@ -1549,8 +1551,7 @@ cdef class WriteBatch(object):
 
     def __dealloc__(self):
         if not self.batch == NULL:
-            with nogil:
-                del self.batch
+            del self.batch
 
     def put(self, key, value):
         cdef db.ColumnFamilyHandle* cf_handle = NULL
@@ -2304,8 +2305,7 @@ cdef class BaseIterator(object):
 
     def __dealloc__(self):
         if not self.ptr == NULL:
-            with nogil:
-                del self.ptr
+            del self.ptr
 
     def __iter__(self):
         return self
