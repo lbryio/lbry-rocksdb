@@ -1439,6 +1439,12 @@ cdef class Options(ColumnFamilyOptions):
         def __set__(self, value):
             self.opts.WAL_size_limit_MB = value
 
+    property max_total_wal_size:
+        def __get__(self):
+            return self.opts.max_total_wal_size
+        def __set__(self, value):
+            self.opts.max_total_wal_size = value
+
     property manifest_preallocation_size:
         def __get__(self):
             return self.opts.manifest_preallocation_size
