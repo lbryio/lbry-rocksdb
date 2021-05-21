@@ -11,3 +11,4 @@ cdef extern from "rocksdb/statistics.h" namespace "rocksdb":
 
     cdef cppclass Statistics:
         void set_stats_level(StatsLevel) nogil except+
+
