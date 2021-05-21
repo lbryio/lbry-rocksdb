@@ -936,6 +936,30 @@ cdef class ColumnFamilyOptions(object):
             if 'max_dict_bytes' in value:
                 copts.max_dict_bytes = value['max_dict_bytes']
 
+    property bottommost_compression_opts:
+        def __get__(self):
+            cdef dict ret_ob = {}
+
+            ret_ob['window_bits'] = self.copts.bottommost_compression_opts.window_bits
+            ret_ob['level'] = self.copts.bottommost_compression_opts.level
+            ret_ob['strategy'] = self.copts.bottommost_compression_opts.strategy
+            ret_ob['max_dict_bytes'] = self.copts.bottommost_compression_opts.max_dict_bytes
+
+            return ret_ob
+
+        def __set__(self, dict value):
+            cdef options.CompressionOptions* copts
+            copts = cython.address(self.copts.bottommost_compression_opts)
+            #  CompressionOptions(int wbits, int _lev, int _strategy, int _max_dict_bytes)
+            if 'window_bits' in value:
+                copts.window_bits  = value['window_bits']
+            if 'level' in value:
+                copts.level = value['level']
+            if 'strategy' in value:
+                copts.strategy = value['strategy']
+            if 'max_dict_bytes' in value:
+                copts.max_dict_bytes = value['max_dict_bytes']
+
     property compaction_pri:
         def __get__(self):
             if self.copts.compaction_pri == options.kByCompensatedSize:
@@ -1002,6 +1026,53 @@ cdef class ColumnFamilyOptions(object):
                 self.copts.compression = options.kZSTDNotFinalCompression
             elif value == CompressionType.disable_compression:
                 self.copts.compression = options.kDisableCompressionOption
+            else:
+                raise TypeError("Unknown compression: %s" % value)
+
+    property bottommost_compression:
+        def __get__(self):
+            if self.copts.bottommost_compression == options.kNoCompression:
+                return CompressionType.no_compression
+            elif self.copts.bottommost_compression  == options.kSnappyCompression:
+                return CompressionType.snappy_compression
+            elif self.copts.bottommost_compression == options.kZlibCompression:
+                return CompressionType.zlib_compression
+            elif self.copts.bottommost_compression == options.kBZip2Compression:
+                return CompressionType.bzip2_compression
+            elif self.copts.bottommost_compression == options.kLZ4Compression:
+                return CompressionType.lz4_compression
+            elif self.copts.bottommost_compression == options.kLZ4HCCompression:
+                return CompressionType.lz4hc_compression
+            elif self.copts.bottommost_compression == options.kXpressCompression:
+                return CompressionType.xpress_compression
+            elif self.copts.bottommost_compression == options.kZSTD:
+                return CompressionType.zstd_compression
+            elif self.copts.bottommost_compression == options.kZSTDNotFinalCompression:
+                return CompressionType.zstdnotfinal_compression
+            elif self.copts.bottommost_compression == options.kDisableCompressionOption:
+                return CompressionType.disable_compression
+            else:
+                raise Exception("Unknonw type: %s" % self.opts.compression)
+
+        def __set__(self, value):
+            if value == CompressionType.no_compression:
+                self.copts.bottommost_compression = options.kNoCompression
+            elif value == CompressionType.snappy_compression:
+                self.copts.bottommost_compression = options.kSnappyCompression
+            elif value == CompressionType.zlib_compression:
+                self.copts.bottommost_compression = options.kZlibCompression
+            elif value == CompressionType.bzip2_compression:
+                self.copts.bottommost_compression = options.kBZip2Compression
+            elif value == CompressionType.lz4_compression:
+                self.copts.bottommost_compression = options.kLZ4Compression
+            elif value == CompressionType.lz4hc_compression:
+                self.copts.bottommost_compression = options.kLZ4HCCompression
+            elif value == CompressionType.zstd_compression:
+                self.copts.bottommost_compression = options.kZSTD
+            elif value == CompressionType.zstdnotfinal_compression:
+                self.copts.bottommost_compression = options.kZSTDNotFinalCompression
+            elif value == CompressionType.disable_compression:
+                self.copts.bottommost_compression = options.kDisableCompressionOption
             else:
                 raise TypeError("Unknown compression: %s" % value)
 
@@ -1294,7 +1365,7 @@ cdef class Options(ColumnFamilyOptions):
     def __dealloc__(self):
         if not self.opts == NULL:
             with nogil:
-                del self.copts
+                self.copts = NULL
                 del self.opts
 
     def __init__(self, **kwargs):
@@ -1758,7 +1829,7 @@ cdef class DB(object):
         cdef ColumnFamilyOptions copts
         cdef cpp_bool c_safe = safe
         cdef Status st
-        if self.db != NULL:
+        if not self.db == NULL:
             # We need stop backround compactions
             with nogil:
                 db.CancelAllBackgroundWork(self.db, c_safe)
@@ -1769,11 +1840,12 @@ cdef class DB(object):
                 if copts:
                     copts.in_use = False
             self.cf_options.clear()
+            if self.opts is not None:
+                self.opts.in_use = False
+            self.opts = None
             with nogil:
                 self.db.Close()
                 self.db = NULL
-            if self.opts is not None:
-                self.opts.in_use = False
 
     def __dealloc__(self):
         self.close()

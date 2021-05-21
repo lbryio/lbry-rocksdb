@@ -119,6 +119,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         int max_write_buffer_number
         int min_write_buffer_number_to_merge
         CompressionType compression
+        CompressionType bottommost_compression
         CompactionPri compaction_pri
         # TODO: compression_per_level
         shared_ptr[SliceTransform] prefix_extractor
@@ -157,6 +158,7 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         # TODO: remove options source_compaction_factor, max_grandparent_overlap_bytes and expanded_compaction_factor from document
         uint64_t max_compaction_bytes
         CompressionOptions compression_opts
+        CompressionOptions bottommost_compression_opts
         cpp_bool optimize_filters_for_hits
         cpp_bool paranoid_file_checks
         cpp_bool level_compaction_dynamic_level_bytes
