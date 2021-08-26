@@ -1,3 +1,4 @@
+include README.rst
 include rocksdb/cpp/*.hpp
 recursive-include rocksdb *.pxd
 recursive-include rocksdb *.pyx
