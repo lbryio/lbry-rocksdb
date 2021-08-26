@@ -2,6 +2,11 @@ Note
 =========
 The original pyrocksdb (https://pypi.python.org/pypi/pyrocksdb/0.4) has not been updated for long time. I update pyrocksdb to support the latest rocksdb. Please open issues in github if you have any problem.
 
+News (2021/08/26 iFA)
+=========
+Thanks for @mosquito (https://github.com/mosquito) who coded a github workflow to build static lib automatically.
+Python version which lower than 3.7 is not supported anymore.
+
 News (2020/09/03 iFA)
 =========
 Python version which lower than 3.0 is not supported anymore.
