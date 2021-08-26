@@ -1,21 +1,14 @@
-|conda-badge|
-
-.. |conda-badge| image:: https://anaconda.org/conda-forge/python-rocksdb/badges/installer/conda.svg
-   :target: https://anaconda.org/conda-forge/python-rocksdb
-
 Note
-====
+=========
 The original pyrocksdb (https://pypi.python.org/pypi/pyrocksdb/0.4) has not been updated for long time. I update pyrocksdb to support the latest rocksdb. Please open issues in github if you have any problem.
 
-News (2019/04/18)
-=================
-Currently I am refactoring the code, and more features like TTL are coming soon. And the installation with cmake will be much more easily.
+News (2021/08/26 iFA)
+=========
+Thanks for @mosquito (https://github.com/mosquito) who coded a github workflow to build static lib automatically. 
 
-News (2019/04/19)
-=================
-I have created a new branch(https://github.com/twmht/python-rocksdb/tree/pybind11) which provides the basic functions (`put`, `get` and `delete`) now. And the installtion is much more easily!  you can try it if you encounter any installtion issues in the current version of `python-rocksdb`.
-
-The branch is under development and will be released to PypI after I migrate most of the existing features.
+News (2020/09/03 iFA)
+=========
+Python version which lower than 3.0 is not supported anymore.
 
 pyrocksdb
 =========
