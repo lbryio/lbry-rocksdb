@@ -4,7 +4,8 @@ The original pyrocksdb (https://pypi.python.org/pypi/pyrocksdb/0.4) has not been
 
 News (2021/08/26 iFA)
 =========
-Thanks for @mosquito (https://github.com/mosquito) who coded a github workflow to build static lib automatically. 
+Thanks for @mosquito (https://github.com/mosquito) who coded a github workflow to build static lib automatically.
+Python version which lower than 3.7 is not supported anymore.
 
 News (2020/09/03 iFA)
 =========
