@@ -53,6 +53,23 @@ class TestDB(TestHelper):
         self.db.put(b"a", b"b")
         self.assertEqual(b"b", self.db.get(b"a"))
 
+    def test_put_then_get_from_secondary(self):
+        secondary_location = os.path.join(self.db_loc, "secondary")
+        secondary = rocksdb.DB(
+            os.path.join(self.db_loc, "test"),
+            rocksdb.Options(create_if_missing=True, max_open_files=-1),
+            secondary_name=secondary_location
+        )
+        self.addCleanup(secondary.close)
+
+        self.assertIsNone(secondary.get(b"a"))
+        self.db.put(b"a", b"b")
+        self.assertEqual(b"b", self.db.get(b"a"))
+        self.assertIsNone(secondary.get(b"a"))
+        secondary.try_catch_up_with_primary()
+        self.assertEqual(b"b", secondary.get(b"a"))
+
+
     def test_multi_get(self):
         self.db.put(b"a", b"1")
         self.db.put(b"b", b"2")

@@ -1722,8 +1722,9 @@ cdef class DB(object):
     cdef db.DB* db
     cdef list cf_handles
     cdef list cf_options
+    cdef py_bool is_secondary
 
-    def __cinit__(self, db_name, Options opts, dict column_families=None, read_only=False):
+    def __cinit__(self, db_name, Options opts, dict column_families=None, read_only=False, secondary_name=''):
         cdef Status st
         cdef string db_path
         cdef vector[db.ColumnFamilyDescriptor] column_family_descriptors
@@ -1738,6 +1739,7 @@ cdef class DB(object):
             raise Exception("Options object is already used by another DB")
 
         db_path = path_to_string(db_name)
+
         if not column_families or default_cf_name not in column_families:
             # Always add the default column family
             column_family_descriptors.push_back(
@@ -1771,7 +1773,19 @@ cdef class DB(object):
                     )
                 )
                 self.cf_options.append(cf_options)
-        if read_only:
+
+        if secondary_name != '':
+            secondary_path = path_to_string(secondary_name)
+            self.is_secondary = True
+            with nogil:
+                st = db.DB_OpenAsSecondary_ColumnFamilies(
+                    deref(opts.opts),
+                    db_path,
+                    secondary_path,
+                    column_family_descriptors,
+                    &column_family_handles,
+                    &self.db)
+        elif read_only:
             with nogil:
                 st = db.DB_OpenForReadOnly_ColumnFamilies(
                     deref(opts.opts),
@@ -1846,6 +1860,11 @@ cdef class DB(object):
             with nogil:
                 self.db.Close()
                 self.db = NULL
+
+    def try_catch_up_with_primary(self):
+        with nogil:
+            st = self.db.TryCatchUpWithPrimary()
+        check_status(st)
 
     def __dealloc__(self):
         self.close()
