@@ -1,3 +1,4 @@
+import sys
 import platform
 import os
 from setuptools import setup
@@ -13,6 +14,10 @@ except ImportError:
     SOURCES = ['rocksdb/_rocksdb.cpp']
 else:
     SOURCES = ['rocksdb/_rocksdb.pyx']
+
+with open(os.path.join(os.path.dirname(__file__), 'rocksdb', '__init__.py'), 'r') as init_file:
+    version_line = [l for l in init_file.readlines() if l.startswith('__version__ = "')][0]
+    version = version_line.split('__version__ = "')[1][:-2]
 
 EXTRA_COMPILE_ARGS = [
     '-std=c++11',
@@ -60,17 +65,21 @@ if all(map(os.path.exists, STATIC_LIBRARIES)):
         os.path.join("src", "rocksdb", "lz4-1.9.3", "lib"),
         os.path.join("src", "rocksdb", "include"),
     ]
-
+    print("✔️ all static libraries exist in expected locations")
+else:
+    print('✘ missing static library files')
+    sys.exit(1)
 
 setup(
-    name="python-rocksdb",
-    version='0.7.0',
+    name="lbry-rocksdb",
+    version=version,
     keywords=['rocksdb', 'static', 'build'],
     description="Python bindings for RocksDB",
-    long_description=open("README.rst").read(),
-    author='Ming Hsuan Tu',
-    author_email="qrnnis2623891@gmail.com",
-    url="https://github.com/twmht/python-rocksdb",
+    long_description=open("README.md").read(),
+    long_description_content_type='text/markdown',
+    author='Jack Robison',
+    author_email="jackrobison@lbry.com",
+    url="https://github.com/lbryio/lbry-rocksdb",
     license='BSD License',
 	python_requires=">=3.7.0",
     setup_requires=['setuptools>=25', 'Cython>=0.20'],
@@ -88,8 +97,7 @@ setup(
         extra_link_args=EXTRA_LINK_ARGS,
     )]),
     extras_require={
-        "doc": ['sphinx_rtd_theme', 'sphinx'],
-        "test": ['pytest'],
+        "doc": ['sphinx_rtd_theme', 'sphinx']
     },
     include_package_data=False,
     zip_safe=False,
