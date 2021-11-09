@@ -1,11 +1,9 @@
 set -ex
 
-apt install -y binutils cmake
+apt install -y binutils
 
 cd lbry-rocksdb
 mkdir -p dist
-make clean && make
-
 
 function build_wheel() {
   /opt/python/$1/bin/pip install cython wheel

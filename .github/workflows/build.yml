@@ -26,6 +26,8 @@ jobs:
             src/rocksdb/librocksdb.a
       - name: Install requirements
         run: sudo apt-get install build-essential binutils cmake
+      - name: Make static library files
+        run: make clean && make
       - name: Build wheels
         run: /bin/bash scripts/build.sh
       - uses: actions/upload-artifact@v2
