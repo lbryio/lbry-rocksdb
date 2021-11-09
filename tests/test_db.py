@@ -69,7 +69,6 @@ class TestDB(TestHelper):
         secondary.try_catch_up_with_primary()
         self.assertEqual(b"b", secondary.get(b"a"))
 
-
     def test_multi_get(self):
         self.db.put(b"a", b"1")
         self.db.put(b"b", b"2")

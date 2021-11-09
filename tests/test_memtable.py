@@ -1,6 +1,5 @@
 # content of test_sample.py
 import rocksdb
-import pytest
 import shutil
 import os
 import tempfile
