@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - iterator-api
 jobs:
   manylinux:
     runs-on: ubuntu-latest
@@ -14,6 +15,7 @@ jobs:
         with:
           submodules: recursive
       - name: Cache .a files
+        id: build-cache
         uses: actions/cache@v2
         with:
           key: ${{ runner.os }}
@@ -25,8 +27,9 @@ jobs:
             src/rocksdb/libz.a
             src/rocksdb/librocksdb.a
       - name: Install requirements
-        run: sudo apt-get install build-essential binutils cmake
+        run: sudo apt-get install build-essential binutils cmake python3-cffi
       - name: Make static library files
+        if: steps.build-cache.outputs.cache-hit != 'true'
         run: make clean && make
       - name: Build wheels
         run: /bin/bash scripts/build.sh
