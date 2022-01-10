@@ -2347,6 +2347,9 @@ cdef class DB(object):
         if copts:
             copts.in_use = False
 
+    def write_batch(self, py_bool disable_wal = False, py_bool sync = False) -> RocksDBWriteBatch:
+        return RocksDBWriteBatch(self, sync=sync, disable_wal=disable_wal)
+
 
 def repair_db(db_name, Options opts):
     cdef Status st
@@ -2622,3 +2625,23 @@ cdef class BackupEngine(object):
             ret.append(t)
 
         return ret
+
+
+cdef class RocksDBWriteBatch(object):
+    cdef DB db
+    cdef py_bool sync
+    cdef py_bool disable_wal
+    cdef WriteBatch batch
+
+    def __cinit__(self, DB db, sync: bool = False, disable_wal: bool = False):
+        self.batch = WriteBatch()
+        self.db = db
+        self.sync = sync
+        self.disable_wal = disable_wal
+
+    def __enter__(self):
+        return self.batch
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not exc_val:
+            self.db.write(self.batch, sync=self.sync, disable_wal=self.disable_wal)
