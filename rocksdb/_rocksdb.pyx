@@ -2440,6 +2440,7 @@ cdef class BaseIterator(object):
         return ret
 
     def __reversed__(self):
+        self.seek_to_last()
         return ReversedIterator(self)
 
     cpdef seek_to_first(self):
