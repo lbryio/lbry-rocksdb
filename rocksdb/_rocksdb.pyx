@@ -2277,18 +2277,30 @@ cdef class DB(object):
 
     @staticmethod
     def __parse_read_opts(
+        iterate_lower_bound=None,
+        iterate_upper_bound=None,
+        readahead_size=0,
+        prefix_same_as_start=False,
         verify_checksums=False,
         fill_cache=True,
         snapshot=None,
-        read_tier="all"):
+        read_tier="all",
+        auto_prefix_mode=False):
 
         # TODO: Is this really effiencet ?
         return locals()
 
     cdef options.ReadOptions build_read_opts(self, dict py_opts):
         cdef options.ReadOptions opts
+        cdef Slice iterate_lower_bound
+        cdef Slice iterate_upper_bound
+
         opts.verify_checksums = py_opts['verify_checksums']
         opts.fill_cache = py_opts['fill_cache']
+        opts.readahead_size = py_opts['readahead_size']
+        opts.prefix_same_as_start = py_opts['prefix_same_as_start']
+        opts.auto_prefix_mode = py_opts['auto_prefix_mode']
+
         if py_opts['snapshot'] is not None:
             opts.snapshot = (<Snapshot?>(py_opts['snapshot'])).ptr
 
@@ -2298,7 +2310,10 @@ cdef class DB(object):
             opts.read_tier = options.kBlockCacheTier
         else:
             raise ValueError("Invalid read_tier")
-
+        if py_opts['iterate_lower_bound'] is not None:
+            opts.iterate_lower_bound = new Slice(PyBytes_AsString(py_opts['iterate_lower_bound']), PyBytes_Size(py_opts['iterate_lower_bound']))
+        if py_opts['iterate_upper_bound'] is not None:
+            opts.iterate_upper_bound = new Slice(PyBytes_AsString(py_opts['iterate_upper_bound']), PyBytes_Size(py_opts['iterate_upper_bound']))
         return opts
 
     property options:
