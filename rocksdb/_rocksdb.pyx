@@ -323,7 +323,6 @@ BloomFilterPolicy = PyBloomFilterPolicy
 #############################################
 
 
-
 ## Here comes the stuff for the merge operator
 @cython.internal
 cdef class PyMergeOperator(object):
@@ -1950,6 +1949,85 @@ cdef class DB(object):
             st = self.db.Write(opts, batch.batch)
         check_status(st)
 
+    def iterator(self, start: bytes, column_family: bytes = None, iterate_lower_bound: bytes = None,
+                 iterate_upper_bound: bytes = None, reverse: bool = False, include_key: bool = True,
+                 include_value: bool = True, fill_cache: bool = True, prefix_same_as_start: bool = False,
+                 auto_prefix_mode: bool = False):
+        """
+        RocksDB Iterator
+
+        Args:
+            column_family (bytes):        the name of the column family
+            start (bytes):                prefix to seek to
+            iterate_lower_bound (bytes):  defines the smallest key at which the backward iterator can return an entry.
+                                          Once the bound is passed, Valid() will be false. `iterate_lower_bound` is
+                                          inclusive ie the bound value is a valid entry.
+                                          If prefix_extractor is not null, the Seek target and `iterate_lower_bound`
+                                          need to have the same prefix. This is because ordering is not guaranteed
+                                          outside of prefix domain.
+            iterate_upper_bound: (bytes): defines the extent up to which the forward iterator
+                                          can returns entries. Once the bound is reached, Valid() will be false.
+                                          "iterate_upper_bound" is exclusive ie the bound value is
+                                          not a valid entry. If prefix_extractor is not null:
+                                            1. If auto_prefix_mode = true, iterate_upper_bound will be used
+                                               to infer whether prefix iterating (e.g. applying prefix bloom filter)
+                                               can be used within RocksDB. This is done by comparing
+                                               iterate_upper_bound with the seek key.
+                                            2. If auto_prefix_mode = false, iterate_upper_bound only takes
+                                               effect if it shares the same prefix as the seek key. If
+                                               iterate_upper_bound is outside the prefix of the seek key, then keys
+                                               returned outside the prefix range will be undefined, just as if
+                                               iterate_upper_bound = null.
+                                            If iterate_upper_bound is not null, SeekToLast() will position the iterator
+                                            at the first key smaller than iterate_upper_bound.
+            reverse: (bool):              run the iteration in reverse - using `reversed` is also supported
+            include_key (bool):           the iterator should include the key in each iteration
+            include_value (bool):         the iterator should include the value in each iteration
+            fill_cache (bool):            Should the "data block"/"index block" read for this iteration be placed in
+                                          block cache? Callers may wish to set this field to false for bulk scans.
+                                          This would help not to the change eviction order of existing items in the
+                                          block cache. Default: true
+            prefix_same_as_start (bool):  Enforce that the iterator only iterates over the same prefix as the seek.
+                                          This option is effective only for prefix seeks, i.e. prefix_extractor is
+                                          non-null for the column family and total_order_seek is false.  Unlike
+                                          iterate_upper_bound, prefix_same_as_start only works within a prefix
+                                          but in both directions. Default: false
+            auto_prefix_mode (bool):      When true, by default use total_order_seek = true, and RocksDB can
+                                          selectively enable prefix seek mode if won't generate a different result
+                                          from total_order_seek, based on seek key, and iterator upper bound.
+                                          Not supported in ROCKSDB_LITE mode, in the way that even with value true
+                                          prefix mode is not used. Default: false
+
+        Returns:
+            BaseIterator: An iterator that yields key/value pairs or keys or values alone depending on the arguments.
+                          The iterator supports being `reversed`
+        """
+
+        cf = self.get_column_family(column_family)
+
+        if not include_value:
+            iterator = self.iterkeys(
+                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
+                auto_prefix_mode=auto_prefix_mode
+            )
+        elif not include_key:
+            iterator = self.itervalues(
+                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
+                auto_prefix_mode=auto_prefix_mode
+            )
+        else:
+            iterator = self.iteritems(
+                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
+                auto_prefix_mode=auto_prefix_mode
+            )
+        iterator.seek(start)
+        if reverse:
+            iterator = reversed(iterator)
+        return iterator
+
     def get(self, key, *args, **kwargs):
         cdef string res
         cdef Status st
@@ -2386,7 +2464,6 @@ def list_column_families(db_name, Options opts):
     check_status(st)
 
     return column_families
-
 
 @cython.no_gc_clear
 @cython.internal
