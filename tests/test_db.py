@@ -723,8 +723,9 @@ class TestDBColumnFamilies(TestHelper):
             b'A': rocksdb.ColumnFamilyOptions(),
             b'B': rocksdb.ColumnFamilyOptions()
         }
-        secondary = rocksdb.get_db_with_options(
-            os.path.join(self.db_loc, "test"), create_if_missing=True, max_open_files=-1,
+        secondary = rocksdb.DB(
+            os.path.join(self.db_loc, "test"),
+            rocksdb.Options(create_if_missing=True, max_open_files=-1),
             secondary_name=secondary_location, column_families=cf
         )
         self.addCleanup(secondary.close)
@@ -781,11 +782,11 @@ class TestPrefixIterator(TestHelper):
         self.assertListEqual(
             [(b'a0', b'a0_value'), (b'a1', b'a1_value'), (b'a1b', b'a1b_value'), (b'a2b', b'a2b_value'),
              (b'a3', b'a3_value'), (b'a4', b'a4_value')],
-            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b', prefix_same_as_start=True))
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b'))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
-            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b', prefix_same_as_start=True, include_value=False))
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b', include_value=False))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
@@ -885,37 +886,37 @@ class TestPrefixIteratorWithExtractor(TestHelper):
         self.assertListEqual(
             [(b'a0', b'a0_value'), (b'a1', b'a1_value'), (b'a1b', b'a1b_value'), (b'a2b', b'a2b_value'),
              (b'a3', b'a3_value'), (b'a4', b'a4_value')],
-            list(map(lambda x: (x[0][-1], x[1]), self.db.iterator(column_family=b'first', start=b'a', prefix_same_as_start=True)))
+            list(map(lambda x: (x[0][-1], x[1]), self.db.iterator(column_family=cf_a, start=b'a', prefix_same_as_start=True)))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
-            list(map(lambda x: x[-1], self.db.iterator(column_family=b'first', start=b'a', include_value=False, prefix_same_as_start=True)))
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a', include_value=False, prefix_same_as_start=True)))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
-            list(map(lambda x: x[-1], self.db.iterator(column_family=b'first', start=b'a0', iterate_upper_bound=b'a5', include_value=False)))
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a5', include_value=False)))
         )
         self.assertListEqual(
             [b'a4', b'a3', b'a2b', b'a1b', b'a1', b'a0'],
             list(map(lambda x: x[-1],
                 reversed(self.db.iterator(
-                    column_family=b'first', start=b'a0', iterate_upper_bound=b'a5', include_value=False
+                    column_family=cf_a, start=b'a0', iterate_upper_bound=b'a5', include_value=False
                 ))))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b', b'a2b', b'a3'],
-            list(map(lambda x: x[-1], self.db.iterator(column_family=b'first', start=b'a0', iterate_upper_bound=b'a4', include_value=False)))
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a4', include_value=False)))
         )
         self.assertListEqual(
             [b'a0', b'a1', b'a1b'],
-            list(map(lambda x: x[-1], self.db.iterator(column_family=b'first', start=b'a0', iterate_upper_bound=b'a2', include_value=False)))
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a2', include_value=False)))
         )
         self.assertListEqual(
             [b'a1b', b'a1', b'a0'],
             list(map(lambda x: x[-1], reversed(
-                self.db.iterator(column_family=b'first', start=b'a0', iterate_upper_bound=b'a2', include_value=False))))
+                self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a2', include_value=False))))
         )
         self.assertListEqual(
             [b'b0'],
-            list(map(lambda x: x[-1], self.db.iterator(column_family=b'second', start=b'b', include_value=False)))
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_b, start=b'b', include_value=False)))
         )

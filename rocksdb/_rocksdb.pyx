@@ -1949,7 +1949,7 @@ cdef class DB(object):
             st = self.db.Write(opts, batch.batch)
         check_status(st)
 
-    def iterator(self, start: bytes, column_family: bytes = None, iterate_lower_bound: bytes = None,
+    def iterator(self, start: bytes, column_family: ColumnFamilyHandle = None, iterate_lower_bound: bytes = None,
                  iterate_upper_bound: bytes = None, reverse: bool = False, include_key: bool = True,
                  include_value: bool = True, fill_cache: bool = True, prefix_same_as_start: bool = False,
                  auto_prefix_mode: bool = False):
@@ -1957,7 +1957,7 @@ cdef class DB(object):
         RocksDB Iterator
 
         Args:
-            column_family (bytes):        the name of the column family
+            column_family (ColumnFamilyHandle):  column family handle
             start (bytes):                prefix to seek to
             iterate_lower_bound (bytes):  defines the smallest key at which the backward iterator can return an entry.
                                           Once the bound is passed, Valid() will be false. `iterate_lower_bound` is
@@ -2003,23 +2003,21 @@ cdef class DB(object):
                           The iterator supports being `reversed`
         """
 
-        cf = self.get_column_family(column_family)
-
         if not include_value:
             iterator = self.iterkeys(
-                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                column_family=column_family, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
                 iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
                 auto_prefix_mode=auto_prefix_mode
             )
         elif not include_key:
             iterator = self.itervalues(
-                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                column_family=column_family, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
                 iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
                 auto_prefix_mode=auto_prefix_mode
             )
         else:
             iterator = self.iteritems(
-                column_family=cf, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
+                column_family=column_family, fill_cache=fill_cache, prefix_same_as_start=prefix_same_as_start,
                 iterate_lower_bound=iterate_lower_bound, iterate_upper_bound=iterate_upper_bound,
                 auto_prefix_mode=auto_prefix_mode
             )
