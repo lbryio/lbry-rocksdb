@@ -172,10 +172,15 @@ cdef extern from "rocksdb/options.h" namespace "rocksdb":
         cpp_bool disableWAL
 
     cdef cppclass ReadOptions:
+        const Snapshot* snapshot
+        const Slice* iterate_lower_bound
+        const Slice* iterate_upper_bound
+        size_t readahead_size
         cpp_bool verify_checksums
         cpp_bool fill_cache
-        const Snapshot* snapshot
         ReadTier read_tier
+        cpp_bool prefix_same_as_start
+        cpp_bool auto_prefix_mode
 
     cdef cppclass FlushOptions:
         cpp_bool wait

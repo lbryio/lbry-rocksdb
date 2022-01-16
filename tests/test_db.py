@@ -9,8 +9,10 @@ import struct
 import tempfile
 from rocksdb.merge_operators import UintAddOperator, StringAppendOperator
 
+
 def int_to_bytes(ob):
     return str(ob).encode('ascii')
+
 
 class TestHelper(unittest.TestCase):
 
@@ -69,6 +71,24 @@ class TestDB(TestHelper):
         secondary.try_catch_up_with_primary()
         self.assertEqual(b"b", secondary.get(b"a"))
 
+        secondary2_location = os.path.join(self.db_loc, "secondary2")
+        secondary2 = rocksdb.DB(
+            os.path.join(self.db_loc, "test"),
+            rocksdb.Options(create_if_missing=True, max_open_files=-1),
+            secondary_name=secondary2_location
+        )
+        self.addCleanup(secondary2.close)
+
+        self.assertEqual(b"b", secondary2.get(b"a"))
+        self.db.put(b"a", b"c")
+        self.assertEqual(b"b", secondary.get(b"a"))
+        self.assertEqual(b"b", secondary2.get(b"a"))
+        self.assertEqual(b"c", self.db.get(b"a"))
+        secondary.try_catch_up_with_primary()
+        secondary2.try_catch_up_with_primary()
+        self.assertEqual(b"c", secondary.get(b"a"))
+        self.assertEqual(b"c", secondary2.get(b"a"))
+
     def test_multi_get(self):
         self.db.put(b"a", b"1")
         self.db.put(b"b", b"2")
@@ -97,6 +117,18 @@ class TestDB(TestHelper):
         ret = self.db.multi_get([b'key', b'a'])
         self.assertEqual(ref, ret)
 
+    def test_write_batch_context(self):
+        with self.db.write_batch() as batch:
+            batch.put(b"key", b"v1")
+            batch.delete(b"key")
+            batch.put(b"key", b"v2")
+            batch.put(b"key", b"v3")
+            batch.put(b"a", b"b")
+
+        ref = {b'a': b'b', b'key': b'v3'}
+        ret = self.db.multi_get([b'key', b'a'])
+        self.assertEqual(ref, ret)
+
     def test_write_batch_iter(self):
         batch = rocksdb.WriteBatch()
         self.assertEqual([], list(batch))
@@ -119,7 +151,6 @@ class TestDB(TestHelper):
             ('Merge', b'xxx', b'value')
         ]
         self.assertEqual(ref, list(it))
-
 
     def test_key_may_exists(self):
         self.db.put(b"a", b'1')
@@ -173,7 +204,6 @@ class TestDB(TestHelper):
         reverse_it = reversed(it)
         it.seek_for_prev(b'c3')
         self.assertEqual(it.get(), (b'c2', b'c2_value'))
-
 
     def test_iter_keys(self):
         for x in range(300):
@@ -457,6 +487,7 @@ class StaticPrefix(rocksdb.interfaces.SliceTransform):
     def in_range(self, dst):
         return len(dst) == 5
 
+
 class TestPrefixExtractor(TestHelper):
     def setUp(self):
         TestHelper.setUp(self)
@@ -687,15 +718,30 @@ class TestDBColumnFamilies(TestHelper):
         self.assertEqual({(cfa, b'a'): b'1', (cfa, b'b'): b'2'}, dict(it))
 
     def test_get_property(self):
+        secondary_location = os.path.join(self.db_loc, "secondary")
+        cf = {
+            b'A': rocksdb.ColumnFamilyOptions(),
+            b'B': rocksdb.ColumnFamilyOptions()
+        }
+        secondary = rocksdb.DB(
+            os.path.join(self.db_loc, "test"),
+            rocksdb.Options(create_if_missing=True, max_open_files=-1),
+            secondary_name=secondary_location, column_families=cf
+        )
+        self.addCleanup(secondary.close)
+
         for x in range(300):
             x = int_to_bytes(x)
             self.db.put((self.cf_a, x), x)
 
-        self.assertEqual(b"300",
-                         self.db.get_property(b'rocksdb.estimate-num-keys',
-                                              self.cf_a))
-        self.assertIsNone(self.db.get_property(b'does not exsits',
-                                               self.cf_a))
+        self.assertIsNone(self.db.get_property(b'does not exsits', self.cf_a))
+        self.assertEqual(b"0", secondary.get_property(b'rocksdb.estimate-num-keys', secondary.get_column_family(b'A')))
+        self.assertEqual(b"300", self.db.get_property(b'rocksdb.estimate-num-keys', self.cf_a))
+
+        secondary.try_catch_up_with_primary()
+
+        self.assertEqual(b"300", secondary.get_property(b'rocksdb.estimate-num-keys', secondary.get_column_family(b'A')))
+        self.assertEqual(b"300", self.db.get_property(b'rocksdb.estimate-num-keys', self.cf_a))
 
     def test_compact_range(self):
         for x in range(10000):
@@ -704,3 +750,173 @@ class TestDBColumnFamilies(TestHelper):
 
         self.db.compact_range(column_family=self.cf_b)
 
+
+class OneCharacterPrefix(rocksdb.interfaces.SliceTransform):
+    def name(self):
+        return b'test prefix'
+
+    def transform(self, src):
+        return (0, 1)
+
+    def in_domain(self, src):
+        return len(src) >= 1
+
+    def in_range(self, dst):
+        return len(dst) == 1
+
+
+class TestPrefixIterator(TestHelper):
+    def setUp(self):
+        TestHelper.setUp(self)
+        opts = rocksdb.Options(create_if_missing=True)
+        self.db = rocksdb.DB(os.path.join(self.db_loc, 'test'), opts)
+
+    def test_iterator(self):
+        self.db.put(b'a0', b'a0_value')
+        self.db.put(b'a1', b'a1_value')
+        self.db.put(b'a1b', b'a1b_value')
+        self.db.put(b'a2b', b'a2b_value')
+        self.db.put(b'a3', b'a3_value')
+        self.db.put(b'a4', b'a4_value')
+        self.db.put(b'b0', b'b0_value')
+        self.assertListEqual(
+            [(b'a0', b'a0_value'), (b'a1', b'a1_value'), (b'a1b', b'a1b_value'), (b'a2b', b'a2b_value'),
+             (b'a3', b'a3_value'), (b'a4', b'a4_value')],
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b'))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a5', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a4', b'a3', b'a2b', b'a1b', b'a1', b'a0'],
+            list(reversed(self.db.iterator(start=b'a0', iterate_upper_bound=b'a5', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a4', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a1b', b'a1', b'a0'],
+            list(reversed(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b0', include_value=False))
+        )
+
+
+class TestPrefixIteratorWithExtractor(TestHelper):
+    def setUp(self):
+        TestHelper.setUp(self)
+        opts = rocksdb.Options(create_if_missing=True)
+        opts.prefix_extractor = OneCharacterPrefix()
+        self.db = rocksdb.DB(os.path.join(self.db_loc, 'test'), opts)
+
+    def test_iterator(self):
+        self.db.put(b'a0', b'a0_value')
+        self.db.put(b'a1', b'a1_value')
+        self.db.put(b'a1b', b'a1b_value')
+        self.db.put(b'a2b', b'a2b_value')
+        self.db.put(b'a3', b'a3_value')
+        self.db.put(b'a4', b'a4_value')
+        self.db.put(b'b0', b'b0_value')
+        self.assertListEqual(
+            [(b'a0', b'a0_value'), (b'a1', b'a1_value'), (b'a1b', b'a1b_value'), (b'a2b', b'a2b_value'),
+             (b'a3', b'a3_value'), (b'a4', b'a4_value')],
+            list(self.db.iterator(start=b'a', prefix_same_as_start=True))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a', include_value=False, prefix_same_as_start=True))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a5', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a4', b'a3', b'a2b', b'a1b', b'a1', b'a0'],
+            list(reversed(self.db.iterator(start=b'a0', iterate_upper_bound=b'a5', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a4', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b'],
+            list(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False))
+        )
+        self.assertListEqual(
+            [b'a1b', b'a1', b'a0'],
+            list(reversed(self.db.iterator(start=b'a0', iterate_upper_bound=b'a2', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(self.db.iterator(start=b'a', iterate_upper_bound=b'b0', include_value=False))
+        )
+
+    def test_column_family_iterator(self):
+        cf_a = self.db.create_column_family(b'first', rocksdb.ColumnFamilyOptions())
+        cf_b = self.db.create_column_family(b'second', rocksdb.ColumnFamilyOptions())
+
+        self.db.put((cf_a, b'a0'), b'a0_value')
+        self.db.put((cf_a, b'a1'), b'a1_value')
+        self.db.put((cf_a, b'a1b'), b'a1b_value')
+        self.db.put((cf_a, b'a2b'), b'a2b_value')
+        self.db.put((cf_a, b'a3'), b'a3_value')
+        self.db.put((cf_a, b'a4'), b'a4_value')
+        self.db.put((cf_b, b'b0'), b'b0_value')
+
+        self.assertListEqual(
+            [(b'a0', b'a0_value'), (b'a1', b'a1_value'), (b'a1b', b'a1b_value'), (b'a2b', b'a2b_value'),
+             (b'a3', b'a3_value'), (b'a4', b'a4_value')],
+            list(map(lambda x: (x[0][-1], x[1]), self.db.iterator(column_family=cf_a, start=b'a', prefix_same_as_start=True)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a', include_value=False, prefix_same_as_start=True)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3', b'a4'],
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a5', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a4', b'a3', b'a2b', b'a1b', b'a1', b'a0'],
+            list(map(lambda x: x[-1],
+                reversed(self.db.iterator(
+                    column_family=cf_a, start=b'a0', iterate_upper_bound=b'a5', include_value=False
+                ))))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b', b'a2b', b'a3'],
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a4', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a0', b'a1', b'a1b'],
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a2', include_value=False)))
+        )
+        self.assertListEqual(
+            [b'a1b', b'a1', b'a0'],
+            list(map(lambda x: x[-1], reversed(
+                self.db.iterator(column_family=cf_a, start=b'a0', iterate_upper_bound=b'a2', include_value=False))))
+        )
+        self.assertListEqual(
+            [b'b0'],
+            list(map(lambda x: x[-1], self.db.iterator(column_family=cf_b, start=b'b', include_value=False)))
+        )
