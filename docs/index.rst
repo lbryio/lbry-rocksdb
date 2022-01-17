@@ -1,4 +1,4 @@
-Welcome to python-rocksdb's documentation!
+Welcome to lbry-rocksdb's documentation!
 ==========================================
 
 Overview
@@ -11,7 +11,7 @@ Python bindings to the C++ interface of http://rocksdb.org/ using cython::
     print db.get(b"a")
 
 
-Tested with python2.7 and python3.4 and RocksDB version 5.3.0
+Tested with python 3.7, 3.8, and 3.9 with RocksDB version 6.25.3
 
 .. toctree::
     :maxdepth: 2
@@ -25,9 +25,9 @@ Tested with python2.7 and python3.4 and RocksDB version 5.3.0
 Contributing
 ------------
 
-Source can be found on `github <https://github.com/stephan-hof/pyrocksdb>`_.
+Source can be found on `github <https://github.com/lbryio/lbry-rocksdb>`_.
 Feel free to fork and send pull-requests or create issues on the
-`github issue tracker <https://github.com/stephan-hof/pyrocksdb/issues>`_
+`github issue tracker <https://github.com/lbryio/lbry-rocksdb/issues>`_
 
 RoadMap/TODO
 ------------

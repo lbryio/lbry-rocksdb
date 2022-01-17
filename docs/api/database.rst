@@ -174,6 +174,59 @@ Database object
 
         :rtype: :py:class:`rocksdb.BaseIterator`
 
+    .. py:method:: iterator(start=None, column_family=None, iterate_lower_bound=None,
+                            iterate_upper_bound=None, reverse=False, include_key=True,
+                            include_value=True, fill_cache=True, prefix_same_as_start=False,
+                            auto_prefix_mode=False)
+            :param `rocksdb.ColumnFamilyHandle` column_family:  column family handle
+            :param bytes start: prefix to seek to
+            :param bytes iterate_lower_bound:
+                defines the smallest key at which the backward iterator can return an entry.
+                Once the bound is passed, Valid() will be false. `iterate_lower_bound` is
+                inclusive ie the bound value is a valid entry.
+                If prefix_extractor is not null, the Seek target and `iterate_lower_bound`
+                need to have the same prefix. This is because ordering is not guaranteed
+                outside of prefix domain.
+            :param bytes iterate_upper_bound:
+                defines the extent up to which the forward iterator
+                can returns entries. Once the bound is reached, Valid() will be false.
+                "iterate_upper_bound" is exclusive ie the bound value is
+                not a valid entry. If prefix_extractor is not null:
+                    1. If auto_prefix_mode = true, iterate_upper_bound will be used
+                       to infer whether prefix iterating (e.g. applying prefix bloom filter)
+                       can be used within RocksDB. This is done by comparing
+                       iterate_upper_bound with the seek key.
+                    2. If auto_prefix_mode = false, iterate_upper_bound only takes
+                       effect if it shares the same prefix as the seek key. If
+                       iterate_upper_bound is outside the prefix of the seek key, then keys
+                       returned outside the prefix range will be undefined, just as if
+                       iterate_upper_bound = null.
+                       If iterate_upper_bound is not null, SeekToLast() will position the iterator
+                       at the first key smaller than iterate_upper_bound.
+            :param bool reverse:          run the iteration in reverse - using `reversed` is also supported
+            :param bool include_key:      the iterator should include the key in each iteration
+            :param bool include_value:    the iterator should include the value in each iteration
+            :param bool fill_cache:       Should the "data block"/"index block" read for this iteration be placed in
+                                          block cache? Callers may wish to set this field to false for bulk scans.
+                                          This would help not to the change eviction order of existing items in the
+                                          block cache. Default: true
+            :param bool prefix_same_as_start:
+                                          Enforce that the iterator only iterates over the same prefix as the seek.
+                                          This option is effective only for prefix seeks, i.e. prefix_extractor is
+                                          non-null for the column family and total_order_seek is false.  Unlike
+                                          iterate_upper_bound, prefix_same_as_start only works within a prefix
+                                          but in both directions. Default: false
+            :param bool auto_prefix_mode: When true, by default use total_order_seek = true, and RocksDB can
+                                          selectively enable prefix seek mode if won't generate a different result
+                                          from total_order_seek, based on seek key, and iterator upper bound.
+                                          Not supported in ROCKSDB_LITE mode, in the way that even with value true
+                                          prefix mode is not used. Default: false
+
+        :returns:
+            A iterator object which is valid and ready to begin using. It will be either a key, item or value
+            iterator depending on the arguments provided.
+        :rtype: :py:class:`rocksdb.BaseIterator`
+
     .. py:method:: snapshot()
     
         Return a handle to the current DB state.
