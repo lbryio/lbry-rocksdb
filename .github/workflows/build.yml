@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - master
-      - iterator-api
 jobs:
   manylinux:
     runs-on: ubuntu-latest
