@@ -1752,17 +1752,15 @@ cdef class DB(object):
             for cf_name, cf_options in column_families.items():
                 if not isinstance(cf_name, bytes):
                     raise TypeError(
-                        f"column family name {cf_name!r} is not of type {bytes}!"
+                        f"column family name {cf_name!r} is not of type bytes!"
                     )
                 if not isinstance(cf_options, ColumnFamilyOptions):
                     raise TypeError(
-                        f"column family options {cf_options!r} is not of type "
-                        f"{ColumnFamilyOptions}!"
+                        f"column family options {cf_options!r} is not of type ColumnFamilyOptions!"
                     )
                 if (<ColumnFamilyOptions>cf_options).in_use:
                     raise Exception(
-                        f"ColumnFamilyOptions object for {cf_name} is already "
-                        "used by another Column Family"
+                        f"ColumnFamilyOptions object for {cf_name} is already used by another Column Family"
                     )
                 (<ColumnFamilyOptions>cf_options).in_use = True
                 column_family_descriptors.push_back(
