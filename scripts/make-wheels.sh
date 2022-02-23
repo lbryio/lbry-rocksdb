@@ -1,7 +1,5 @@
 set -ex
 
-apt install -y binutils
-
 cd lbry-rocksdb
 mkdir -p dist
 
