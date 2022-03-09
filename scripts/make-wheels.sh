@@ -19,5 +19,4 @@ cd dist
 for f in ./*linux_*;
 do if [ -f $f ]; then auditwheel repair $f -w . ; rm $f; fi;
 done
-rm setuptools-*.whl
 cd -
