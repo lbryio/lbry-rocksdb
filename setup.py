@@ -81,9 +81,7 @@ setup(
     author_email="jackrobison@lbry.com",
     url="https://github.com/lbryio/lbry-rocksdb",
     license='BSD License',
-	python_requires=">=3.7.0",
-    setup_requires=['setuptools>=25', 'Cython>=0.20'],
-    install_requires=['setuptools>=25'],
+    python_requires=">=3.7.0",
     package_dir={'rocksdb': 'rocksdb'},
     packages=find_packages('.'),
     ext_modules=cythonize([Extension(
