@@ -73,7 +73,7 @@ else:
 setup(
     name="lbry-rocksdb",
     version=version,
-    keywords=['rocksdb', 'static', 'build'],
+    keywords=['rocksdb', 'lbry-rocksdb', 'python-rocksdb', 'leveldb', 'embedded', 'database'],
     description="Python bindings for RocksDB",
     long_description=open("README.md").read(),
     long_description_content_type='text/markdown',
@@ -83,7 +83,7 @@ setup(
     license='BSD License',
     python_requires=">=3.7.0",
     package_dir={'rocksdb': 'rocksdb'},
-    packages=find_packages('.'),
+    packages=find_packages(exclude=('tests',)),
     ext_modules=cythonize([Extension(
         'rocksdb._rocksdb',
         SOURCES,
