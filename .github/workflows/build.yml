@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - github-actions
 jobs:
   manylinux:
     runs-on: ubuntu-latest
@@ -26,7 +27,7 @@ jobs:
             src/rocksdb/libz.a
             src/rocksdb/librocksdb.a
       - name: Install requirements
-        run: sudo apt-get install build-essential binutils cmake python3-cffi
+        run: sudo apt-get install build-essential binutils cmake python3-cffi python3.8-dev python3.9-dev
       - name: Make static library files
         if: steps.build-cache.outputs.cache-hit != 'true'
         run: make clean && make
