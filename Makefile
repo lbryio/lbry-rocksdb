@@ -32,8 +32,8 @@ src/rocksdb/librocksdb.a:
 		-Dlz4_LIBRARIES=../lz4-1.9.3/lib \
 		-Dzstd_INCLUDE_DIRS=../zstd-1.4.9/lib \
 		-Dzstd_LIBRARIES=../zstd-1.4.9/lib \
-		-DZLIB_INCLUDE_DIR=../zlib-1.2.11 \
-		-DZLIB_LIBRARY=./zlib-1.2.11 \
+		-DZLIB_INCLUDE_DIR=../zlib-1.2.12 \
+		-DZLIB_LIBRARY=./zlib-1.2.12 \
 		-DCMAKE_CXX_FLAGS="-fPIC -I../snappy-1.1.8/build -I../zstd-1.4.9/lib/dictBuilder" \
 		.. && make -j $(JOBS))
 
