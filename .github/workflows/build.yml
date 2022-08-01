@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - master
+      - update-v7.4.4
 jobs:
   manylinux:
     runs-on: ubuntu-18.04
