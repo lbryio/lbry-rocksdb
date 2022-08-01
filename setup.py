@@ -20,7 +20,7 @@ with open(os.path.join(os.path.dirname(__file__), 'rocksdb', '__init__.py'), 'r'
     version = version_line.split('__version__ = "')[1][:-2]
 
 EXTRA_COMPILE_ARGS = [
-    '-std=c++11',
+    '-std=c++17',
     '-fPIC',
     '-Os',
     '-Wall',
