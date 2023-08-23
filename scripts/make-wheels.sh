@@ -11,6 +11,7 @@ function build_wheel() {
 build_wheel cp37-cp37m
 build_wheel cp38-cp38
 build_wheel cp39-cp39
+build_wheel cp310-cp310
 build_wheel pp37-pypy37_pp73
 
 cd dist
